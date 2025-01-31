@@ -1,30 +1,78 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import Head from "next/head";
-import Image from "next/image";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 
-export default function MoviePage() {
-  const { id } = useParams();
-  const [movie, setMovie] = useState(null);
-  const [relatedMovies, setRelatedMovies] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+interface Movie {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string;
+  backdrop_path: string;
+  vote_average: number;
+  genres: { id: number; name: string }[];
+  runtime: number;
+  release_date: string;
+}
+
+interface Review {
+  id: number;
+  author: string;
+  content: string;
+}
+
+const MoviePage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [newReview, setNewReview] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [watchlist, setWatchlist] = useState<number[]>([]);
+  const [selectedQuality, setSelectedQuality] = useState<string>('1080p');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [expandedReviews, setExpandedReviews] = useState<{ [key: number]: boolean }>({});
+
+  // Load dark mode preference from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    setIsDarkMode(savedDarkMode);
+    document.documentElement.classList.toggle('dark', savedDarkMode);
+  }, []);
+
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', isDarkMode.toString());
+    document.documentElement.classList.toggle('dark', isDarkMode);
+  }, [isDarkMode]);
+
+  // Load reviews from localStorage
+  useEffect(() => {
+    const savedReviews = localStorage.getItem(`reviews_${id}`);
+    if (savedReviews) {
+      setReviews(JSON.parse(savedReviews));
+    }
+  }, [id]);
+
+  // Save reviews to localStorage
+  useEffect(() => {
+    localStorage.setItem(`reviews_${id}`, JSON.stringify(reviews));
+  }, [reviews, id]);
 
   // Fetch movie details
   useEffect(() => {
     const fetchMovie = async () => {
       try {
-        const response = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=04553a35f2a43bffba8c0dedd36ac92b&append_to_response=videos,credits,similar`);
-        if (!response.ok) throw new Error("Failed to fetch movie data");
-        const data = await response.json();
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=04553a35f2a43bffba8c0dedd36ac92b&append_to_response=similar`);
+        const data = await res.json();
+
         setMovie(data);
-        setRelatedMovies(data.similar.results);
-      } catch (error) {
-        setError(error.message);
+        setRelatedMovies(data.similar.results || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setIsLoading(false);
       }
@@ -33,103 +81,178 @@ export default function MoviePage() {
     fetchMovie();
   }, [id]);
 
-  // Dark mode toggle
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem("darkMode") === "true";
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) document.documentElement.classList.add("dark");
-  }, []);
-
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => !prev);
-    document.documentElement.classList.toggle("dark");
-    localStorage.setItem("darkMode", !darkMode);
+  // Handle watchlist
+  const handleWatchlist = () => {
+    if (movie) {
+      setWatchlist((prev) => (prev.includes(movie.id) ? prev.filter((m) => m !== movie.id) : [...prev, movie.id]));
+    }
   };
 
-  if (isLoading) return <p className="text-center text-gray-600">Loading...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
-  if (!movie) return <p className="text-center text-gray-600">Movie not found.</p>;
+  // Handle review submission
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newReview.trim() === '') return;
 
-  const trailer = movie.videos?.results.find((vid) => vid.type === "Trailer");
-  const posterUrl = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+    // Get or generate a unique anonymous number for the user
+    let userIdentifier = localStorage.getItem('userIdentifier');
+    if (!userIdentifier) {
+      userIdentifier = `Anonymous${reviews.length}`; // Assign a new anonymous number
+      localStorage.setItem('userIdentifier', userIdentifier);
+    }
+
+    const newReviewObj: Review = {
+      id: Date.now(),
+      author: userIdentifier, // Use the user's unique anonymous number
+      content: newReview,
+    };
+
+    setReviews((prevReviews) => [newReviewObj, ...prevReviews]);
+    setNewReview('');
+  };
+
+  // Toggle review expansion
+  const toggleReviewExpansion = (reviewId: number) => {
+    setExpandedReviews((prev) => ({
+      ...prev,
+      [reviewId]: !prev[reviewId],
+    }));
+  };
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-100 dark:bg-gray-900`}>
-      <Head>
-        <title>{movie.title} - Movie Details</title>
-        <meta name="description" content={movie.overview} />
-      </Head>
-
-      {/* Header */}
-      <header className="flex justify-between items-center p-6 bg-white dark:bg-gray-800 shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Movie Details</h1>
-        <div className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${darkMode ? "bg-gray-700" : "bg-yellow-400"}`} onClick={toggleDarkMode}>
-          <div className={`absolute left-1 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform ${darkMode ? "translate-x-0" : "translate-x-6"}`}>
-            {darkMode ? "🌙" : "☀️"}
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+      {/* Header with Dark Mode Toggle */}
+      <header className="flex justify-between items-center p-4 border-b">
+        <h1 className="text-2xl font-bold">Movie Details</h1>
+        <div
+          className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${
+            isDarkMode ? 'bg-gray-700' : 'bg-yellow-400'
+          }`}
+          onClick={() => setIsDarkMode(!isDarkMode)}
+        >
+          <div
+            className={`absolute left-1 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-md transform transition-transform ${
+              isDarkMode ? 'translate-x-0' : 'translate-x-6'
+            }`}
+          >
+            {isDarkMode ? (
+              <svg className="w-4 h-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
+                />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
+                />
+              </svg>
+            )}
           </div>
         </div>
       </header>
 
       {/* Movie Details */}
-      <main className="p-6 max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-6">
-          <Image src={posterUrl} width={500} height={750} alt={movie.title} className="rounded-lg shadow-lg" />
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <Image src={`https://image.tmdb.org/t/p/w500${movie?.poster_path}`} alt={movie?.title || 'Movie Poster'} width={300} height={450} className="rounded-lg" />
           <div>
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">{movie.title}</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">{movie.overview}</p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2"><strong>Release Date:</strong> {movie.release_date}</p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2"><strong>Rating:</strong> ⭐ {movie.vote_average}/10</p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2"><strong>Genres:</strong> {movie.genres.map(g => g.name).join(", ")}</p>
+            <h1 className="text-3xl font-bold">{movie?.title}</h1>
+            <p className="text-gray-600 dark:text-gray-300">{movie?.overview}</p>
+            <p className="mt-2"><strong>Rating:</strong> {movie?.vote_average.toFixed(1)}</p>
+            <p><strong>Genres:</strong> {movie?.genres.map((g) => g.name).join(', ')}</p>
+            <p><strong>Runtime:</strong> {movie?.runtime} mins</p>
+            <p><strong>Release Date:</strong> {movie?.release_date}</p>
+
+            {/* Watchlist Button */}
+            <button
+              onClick={handleWatchlist}
+              className={`mt-3 px-4 py-2 rounded ${watchlist.includes(movie?.id || 0) ? 'bg-red-500' : 'bg-green-500'}`}
+            >
+              {watchlist.includes(movie?.id || 0) ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            </button>
 
             {/* Download Options */}
-            <div className="mt-4">
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Download</h3>
-              <button className="mt-2 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Download 1080p</button>
-              <button className="mt-2 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Download 720p</button>
+            <div className="mt-3">
+              <label className="mr-2">Download Quality:</label>
+              <select value={selectedQuality} onChange={(e) => setSelectedQuality(e.target.value)} className="bg-gray-200 dark:bg-gray-700 p-2 rounded">
+                <option value="1080p">1080p</option>
+                <option value="720p">720p</option>
+                <option value="480p">480p</option>
+                <option value="360p">360p</option>
+              </select>
             </div>
+
+            {/* Download Button */}
+            <a href={`/download/${movie?.id}?quality=${selectedQuality}`} className="mt-3 inline-block bg-blue-500 px-4 py-2 rounded text-white">
+              Download {selectedQuality}
+            </a>
           </div>
         </div>
 
-        {/* Trailer */}
-        {trailer && (
-          <div className="mt-6">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Watch Trailer</h3>
-            <iframe width="100%" height="400" src={`https://www.youtube.com/embed/${trailer.key}`} allowFullScreen className="rounded-lg shadow-lg"></iframe>
-          </div>
-        )}
-
         {/* Related Movies */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Related Movies</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            {relatedMovies.map((movie) => (
-              <Link href={`/movie/${movie.id}`} key={movie.id}>
-                <div className="cursor-pointer p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                  <Image src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`} width={200} height={300} alt={movie.title} className="rounded-md" />
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mt-2">{movie.title}</p>
-                </div>
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">Related Movies</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+            {relatedMovies.map((related) => (
+              <Link key={related.id} href={`/movie/${related.id}`} className="block">
+                <Image src={`https://image.tmdb.org/t/p/w200${related.poster_path}`} alt={related.title} width={200} height={300} className="rounded-lg" />
+                <p className="text-center mt-2">{related.title}</p>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Social Media Sharing */}
+        {/* User Reviews */}
         <div className="mt-6">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Share</h3>
-          <div className="flex space-x-4 mt-2">
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" className="text-blue-600">Facebook</a>
-            <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`} target="_blank" className="text-blue-400">Twitter</a>
-            <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(window.location.href)}`} target="_blank" className="text-green-500">WhatsApp</a>
+          <h2 className="text-2xl font-bold">User Reviews</h2>
+          <form onSubmit={handleReviewSubmit} className="mt-3">
+            <textarea
+              value={newReview}
+              onChange={(e) => setNewReview(e.target.value)}
+              placeholder="Write a review..."
+              className="w-full p-3 bg-gray-100 dark:bg-gray-800 rounded-lg"
+            ></textarea>
+            <button type="submit" className="mt-3 bg-green-500 px-4 py-2 rounded">
+              Submit Review
+            </button>
+          </form>
+
+          {/* Display Reviews */}
+          <div className="mt-4">
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div key={review.id} className="border p-3 rounded my-2">
+                  <p className="font-semibold">{review.author}</p>
+                  <p className={`${expandedReviews[review.id] ? '' : 'line-clamp-3'}`}>
+                    {review.content}
+                  </p>
+                  {review.content.length > 100 && (
+                    <button
+                      onClick={() => toggleReviewExpansion(review.id)}
+                      className="text-blue-500 mt-2"
+                    >
+                      {expandedReviews[review.id] ? 'Read Less' : 'Read More'}
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p>No reviews yet. Be the first to write one!</p>
+            )}
           </div>
         </div>
-
-        {/* Back to Home */}
-        <div className="mt-6 text-center">
-          <Link href="/">
-            <button className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition">Back to Home</button>
-          </Link>
-        </div>
-      </main>
+      </div>
     </div>
   );
-}
+};
+
+export default MoviePage;
