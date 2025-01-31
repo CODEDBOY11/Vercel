@@ -3,23 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Head from "next/head";
+import Image from "next/image";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<{ id: string, title: string, image: string, description: string }[]>([]);
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-
-  // Debounce function to limit API calls
-  const debounce = (func: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay);
-    };
-  };
 
   // Fetch results from the deployed backend
   const fetchResults = async (page = 1) => {
@@ -150,7 +142,13 @@ export default function HomePage() {
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {results.map((item) => (
                   <li key={item.id} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <img src={item.image || "/placeholder.png"} alt={item.title} className="w-full h-40 object-cover rounded-lg" />
+                    <Image
+                      src={item.image || "/placeholder.png"}
+                      alt={item.title}
+                      width={400}
+                      height={300}
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4">{item.title || "No Title"}</h2>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">{item.description || "No Description"}</p>
                     <Link href={`/movie/${item.id}`}>
