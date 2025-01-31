@@ -43,12 +43,13 @@ export default function HomePage() {
       } else {
         setResults((prev) => [...prev, ...(data.results || [])]);
       }
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    catch (error: unknown) {
+  if (error instanceof Error) {
+    setError(error.message);
+  } else {
+    setError("An unknown error occurred");
+  }
+}
 
   const fetchSuggestions = debounce(async () => {
     if (searchQuery.length > 2) {
