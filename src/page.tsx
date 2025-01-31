@@ -3,26 +3,32 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Head from "next/head";
+import Image from "next/image";
+
+interface ResultItem {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string;
+}
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
+  const [results, setResults] = useState<ResultItem[]>([]);
+  const [suggestions, setSuggestions] = useState<ResultItem[]>([]);
   const [darkMode, setDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // Debounce function to limit API calls
-  const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
+  const debounce = (func: (...args: any[]) => void, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    return (...args: any[]) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => func(...args), delay);
     };
   };
 
-  // Fetch results from the deployed backend
   const fetchResults = async (page = 1) => {
     setIsLoading(true);
     setError(null);
@@ -44,64 +50,64 @@ export default function HomePage() {
     }
   };
 
-  // Fetch suggestions dynamically
   const fetchSuggestions = debounce(async () => {
     if (searchQuery.length > 2) {
       try {
         const response = await fetch(
           `https://media-downloader-backend-sqrr.vercel.app/api/search?q=${searchQuery}`
         );
+        if (!response.ok) throw new Error("Failed to fetch suggestions");
         const data = await response.json();
-        setSuggestions(data.results.slice(0, 3)); // Limit to 3 suggestions
+        setSuggestions(data.results.slice(0, 3));
       } catch (error) {
         console.error("Error fetching suggestions:", error);
+        setSuggestions([]);
       }
     } else {
       setSuggestions([]);
     }
   }, 300);
 
-  // Handle search input change
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     fetchSuggestions();
   };
 
-  // Handle search submission
   const handleSearchSubmit = () => {
     setPage(1);
+    setResults([]);
     fetchResults(1);
   };
 
-  // Handle "Load More" button click
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchResults(nextPage);
   };
 
-  // Dark mode toggle
   const toggleDarkMode = () => {
     setDarkMode((prev) => !prev);
   };
 
-  // Apply dark mode on initial render
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem("darkMode") === "true";
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) {
-      document.documentElement.classList.add("dark");
+    if (typeof window !== "undefined") {
+      const savedDarkMode = localStorage.getItem("darkMode") === "true";
+      setDarkMode(savedDarkMode);
+      if (savedDarkMode) {
+        document.documentElement.classList.add("dark");
+      }
     }
   }, []);
 
-  // Save dark mode preference
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("darkMode", "true");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("darkMode", "false");
+    if (typeof window !== "undefined") {
+      if (darkMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("darkMode", "true");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("darkMode", "false");
+      }
     }
   }, [darkMode]);
 
@@ -117,17 +123,15 @@ export default function HomePage() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      {/* Header */}
       <header className="flex justify-between items-center p-6 bg-white dark:bg-gray-800 shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-          Media Downloader
-        </h1>
-        {/* Dark Mode Toggle */}
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Media Downloader</h1>
         <div
           className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${
             darkMode ? "bg-gray-700" : "bg-yellow-400"
           }`}
           onClick={toggleDarkMode}
+          role="button"
+          aria-label="Toggle dark mode"
         >
           <div
             className={`absolute left-1 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-md transform transition-transform ${
@@ -136,28 +140,17 @@ export default function HomePage() {
           >
             {darkMode ? (
               <svg className="w-4 h-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z" />
               </svg>
             ) : (
               <svg className="w-4 h-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z" />
               </svg>
             )}
           </div>
         </div>
       </header>
 
-      {/* Search Bar */}
       <main className="p-6">
         <div className="max-w-2xl mx-auto">
           <input
@@ -170,11 +163,11 @@ export default function HomePage() {
           <button
             onClick={handleSearchSubmit}
             className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+            aria-label="Search"
           >
             Search
           </button>
 
-          {/* Suggestions */}
           {suggestions.length > 0 && (
             <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md max-h-60 overflow-y-scroll">
               {suggestions.map((item) => (
@@ -187,9 +180,11 @@ export default function HomePage() {
                   }}
                   className="flex items-center gap-4 p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  <img
+                  <Image
                     src={item.image || "/placeholder.png"}
                     alt={item.title}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 object-cover rounded-md"
                   />
                   <p className="text-gray-800 dark:text-gray-200">{item.title}</p>
@@ -199,7 +194,6 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Results */}
         <div className="mt-8">
           {isLoading && <p className="text-center">Loading...</p>}
           {error && <p className="text-center text-red-500">{error}</p>}
@@ -208,9 +202,11 @@ export default function HomePage() {
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {results.map((item) => (
                   <li key={item.id} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <img
+                    <Image
                       src={item.image || "/placeholder.png"}
                       alt={item.title}
+                      width={400}
+                      height={300}
                       className="w-full h-40 object-cover rounded-lg"
                     />
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4">
