@@ -21,9 +21,9 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  const debounce = (func: (...args: any[]) => void, delay: number) => {
+  const debounce = (func: (...args: unknown[]) => void, delay: number) => {
     let timeoutId: NodeJS.Timeout;
-    return (...args: any[]) => {
+    return (...args: unknown[]) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => func(...args), delay);
     };
