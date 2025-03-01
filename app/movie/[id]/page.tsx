@@ -27,6 +27,7 @@ const MoviePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
+  const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReview, setNewReview] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,8 @@ const MoviePage: React.FC = () => {
   const [selectedQuality, setSelectedQuality] = useState<string>('1080p');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<{ [key: number]: boolean }>({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   // Load dark mode preference from localStorage
   useEffect(() => {
@@ -62,7 +65,7 @@ const MoviePage: React.FC = () => {
     localStorage.setItem(`reviews_${id}`, JSON.stringify(reviews));
   }, [reviews, id]);
 
-  // Fetch movie details
+  // Fetch movie details, related movies, and featured movies
   useEffect(() => {
     const fetchMovie = async () => {
       try {
@@ -78,7 +81,18 @@ const MoviePage: React.FC = () => {
       }
     };
 
+    const fetchFeaturedMovies = async () => {
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=04553a35f2a43bffba8c0dedd36ac92b`);
+        const data = await res.json();
+        setFeaturedMovies(data.results.slice(0, 6)); // Show 6 featured movies
+      } catch (err) {
+        console.error('Error fetching featured movies:', err);
+      }
+    };
+
     fetchMovie();
+    fetchFeaturedMovies();
   }, [id]);
 
   // Handle watchlist
@@ -118,6 +132,29 @@ const MoviePage: React.FC = () => {
     }));
   };
 
+  // Handle user login
+  const handleLogin = (email: string) => {
+    setIsLoggedIn(true);
+    setUserEmail(email);
+    localStorage.setItem('userEmail', email);
+  };
+
+  // Handle user logout
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserEmail('');
+    localStorage.removeItem('userEmail');
+  };
+
+  // Load user email from localStorage
+  useEffect(() => {
+    const savedUserEmail = localStorage.getItem('userEmail');
+    if (savedUserEmail) {
+      setIsLoggedIn(true);
+      setUserEmail(savedUserEmail);
+    }
+  }, []);
+
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
@@ -125,37 +162,75 @@ const MoviePage: React.FC = () => {
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
       {/* Header with Dark Mode Toggle */}
       <header className="flex justify-between items-center p-4 border-b">
-        <h1 className="text-2xl font-bold">Movie Details</h1>
-        <div
-          className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${
-            isDarkMode ? 'bg-gray-700' : 'bg-yellow-400'
-          }`}
-          onClick={() => setIsDarkMode(!isDarkMode)}
-        >
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">TUNEFLIX</h1>
+          <Link href="https://vercel-rho-silk-31.vercel.app/">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 cursor-pointer text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </Link>
+        </div>
+        <div className="flex items-center gap-4">
+          {isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <p className="text-sm">{userEmail}</p>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleLogin('user@example.com')} // Replace with actual login logic
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Login
+            </button>
+          )}
           <div
-            className={`absolute left-1 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-md transform transition-transform ${
-              isDarkMode ? 'translate-x-0' : 'translate-x-6'
+            className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${
+              isDarkMode ? 'bg-gray-700' : 'bg-yellow-400'
             }`}
+            onClick={() => setIsDarkMode(!isDarkMode)}
           >
-            {isDarkMode ? (
-              <svg className="w-4 h-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
-                />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
-                />
-              </svg>
-            )}
+            <div
+              className={`absolute left-1 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-md transform transition-transform ${
+                isDarkMode ? 'translate-x-0' : 'translate-x-6'
+              }`}
+            >
+              {isDarkMode ? (
+                <svg className="w-4 h-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
+                  />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"
+                  />
+                </svg>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -195,6 +270,19 @@ const MoviePage: React.FC = () => {
             <a href={`/download/${movie?.id}?quality=${selectedQuality}`} className="mt-3 inline-block bg-blue-500 px-4 py-2 rounded text-white">
               Download {selectedQuality}
             </a>
+          </div>
+        </div>
+
+        {/* Featured Movies */}
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">Featured Movies</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-3">
+            {featuredMovies.map((featured) => (
+              <Link key={featured.id} href={`/movie/${featured.id}`} className="block">
+                <Image src={`https://image.tmdb.org/t/p/w200${featured.poster_path}`} alt={featured.title} width={200} height={300} className="rounded-lg" />
+                <p className="text-center mt-2">{featured.title}</p>
+              </Link>
+            ))}
           </div>
         </div>
 
@@ -251,6 +339,36 @@ const MoviePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-8 p-6 bg-gray-100 dark:bg-gray-800">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-lg font-bold">About Us</h3>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
+                TUNEFLIX is your go-to platform for discovering and downloading movies and music.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Contact</h3>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
+                Email: support@tuneflix.com<br />
+                Phone: +1 (123) 456-7890
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold">Privacy Policy</h3>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
+                Read our <Link href="/privacy-policy" className="text-blue-500 hover:underline">Privacy Policy</Link>.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 text-center text-gray-600 dark:text-gray-300">
+            &copy; {new Date().getFullYear()} TUNEFLIX. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
