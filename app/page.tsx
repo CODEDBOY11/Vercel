@@ -122,6 +122,7 @@ const MoviePage: React.FC = () => {
     <>
       <Head>
         <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
+        <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
         {/* Primary Meta Tags */}
         <title>{seoTitle}</title>
         <meta name="title" content={seoTitle} />
