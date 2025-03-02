@@ -23,15 +23,24 @@ export default function HomePage() {
 
   // Debounce function to limit API calls
   const debounce = useCallback(
-    (func: (...args: any[]) => void, delay: number) => {
+    <T extends (...args: unknown[]) => void>(func: T, delay: number) => {
       let timeoutId: NodeJS.Timeout;
-      return (...args: any[]) => {
+      return (...args: Parameters<T>) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => func(...args), delay);
       };
     },
     []
   );
+
+  // Utility function to handle errors
+  const handleError = (error: unknown) => {
+    if (error instanceof Error) {
+      setError(error.message);
+    } else {
+      setError("An unknown error occurred");
+    }
+  };
 
   // Fetch results from the deployed backend
   const fetchResults = async (page = 1) => {
@@ -47,7 +56,7 @@ export default function HomePage() {
         page === 1 ? data.results || [] : [...prev, ...(data.results || [])]
       );
     } catch (error) {
-      setError(error.message);
+      handleError(error);
     } finally {
       setIsLoading(false);
     }
@@ -65,14 +74,14 @@ export default function HomePage() {
           const data = await response.json();
           setSuggestions(data.results.slice(0, 3)); // Limit to 3 suggestions
         } catch (error) {
-          console.error("Error fetching suggestions:", error);
+          handleError(error);
           setSuggestions([]);
         }
       } else {
         setSuggestions([]);
       }
     }, 300),
-    [searchQuery]
+    [searchQuery] // Explicitly declare dependencies
   );
 
   // Handle search input change
