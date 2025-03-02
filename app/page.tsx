@@ -1,174 +1,254 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import Head from 'next/head';
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import Head from "next/head";
+import Image from "next/image";
 
-interface Movie {
-  id: number;
+interface ResultItem {
+  id: string;
   title: string;
-  overview: string;
-  poster_path: string;
-  backdrop_path: string;
-  vote_average: number;
-  genres: { id: number; name: string }[];
-  runtime: number;
-  release_date: string;
+  description?: string;
+  image?: string;
 }
 
-interface Review {
-  id: number;
-  author: string;
-  content: string;
-  rating?: number;
-}
-
-const MoviePage: React.FC = () => {
-  const { id } = useParams() as { id: string };
-  const [movie, setMovie] = useState<Movie | null>(null);
-  const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [newReview, setNewReview] = useState('');
-  const [newRating, setNewRating] = useState<number | null>(null);
+export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<ResultItem[]>([]);
+  const [suggestions, setSuggestions] = useState<ResultItem[]>([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [watchlist, setWatchlist] = useState<number[]>([]);
-  const [selectedQuality, setSelectedQuality] = useState<string>('1080p');
-  const [expandedReviews, setExpandedReviews] = useState<{ [key: number]: boolean }>({});
+  const [page, setPage] = useState(1);
 
-  // Fetch movie details
-  useEffect(() => {
-    const fetchMovie = async () => {
-      try {
-        const res = await fetch(
-          `https://api.themoviedb.org/3/movie/${id}?api_key=YOUR_API_KEY&append_to_response=similar`
-        );
+  // Debounce function to limit API calls
+  const debounce = useCallback(
+    (func: (...args: any[]) => void, delay: number) => {
+      let timeoutId: NodeJS.Timeout;
+      return (...args: any[]) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func(...args), delay);
+      };
+    },
+    []
+  );
 
-        if (!res.ok) throw new Error(`Failed to fetch movie: ${res.status} ${res.statusText}`);
-
-        const data = await res.json();
-        setMovie(data);
-        setRelatedMovies(data.similar?.results || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMovie();
-  }, [id]);
-
-  // Handle watchlist toggle
-  const handleWatchlist = () => {
-    if (movie) {
-      setWatchlist((prev) =>
-        prev.includes(movie.id) ? prev.filter((m) => m !== movie.id) : [...prev, movie.id]
+  // Fetch results from the deployed backend
+  const fetchResults = async (page = 1) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `https://media-downloader-backend-sqrr.vercel.app/api/search?q=${searchQuery}&page=${page}`
       );
+      if (!response.ok) throw new Error("Failed to fetch results");
+      const data = await response.json();
+      setResults((prev) =>
+        page === 1 ? data.results || [] : [...prev, ...(data.results || [])]
+      );
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle review submission
-  const handleReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newReview.trim() === '') return;
+  // Fetch suggestions dynamically
+  const fetchSuggestions = useCallback(
+    debounce(async () => {
+      if (searchQuery.length > 2) {
+        try {
+          const response = await fetch(
+            `https://media-downloader-backend-sqrr.vercel.app/api/search?q=${searchQuery}`
+          );
+          if (!response.ok) throw new Error("Failed to fetch suggestions");
+          const data = await response.json();
+          setSuggestions(data.results.slice(0, 3)); // Limit to 3 suggestions
+        } catch (error) {
+          console.error("Error fetching suggestions:", error);
+          setSuggestions([]);
+        }
+      } else {
+        setSuggestions([]);
+      }
+    }, 300),
+    [searchQuery]
+  );
 
-    const newReviewObj: Review = {
-      id: Date.now(),
-      author: `Anonymous${reviews.length}`,
-      content: newReview,
-      rating: newRating || undefined,
-    };
-
-    setReviews((prevReviews) => [newReviewObj, ...prevReviews]);
-    setNewReview('');
-    setNewRating(null);
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    fetchSuggestions();
   };
 
-  // Toggle review expansion
-  const toggleReviewExpansion = (reviewId: number) => {
-    setExpandedReviews((prev) => ({
-      ...prev,
-      [reviewId]: !prev[reviewId],
-    }));
+  // Handle search submission
+  const handleSearchSubmit = () => {
+    setPage(1);
+    setResults([]);
+    fetchResults(1);
   };
 
-  if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  // Handle "Load More" button click
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchResults(nextPage);
+  };
 
-  // SEO Metadata
-  const seoTitle = `${movie?.title} - Watch, Download & Reviews | TUNEFLIX`;
-  const seoDescription = movie?.overview || 'Discover movie details, reviews, and download options on TUNEFLIX';
-  const canonicalUrl = `https://yourdomain.com/movie/${id}`;
-  const posterUrl = `https://image.tmdb.org/t/p/w500${movie?.poster_path}`;
+  // Dark mode toggle
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+  };
+
+  // Apply dark mode on initial render
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDarkMode = localStorage.getItem("darkMode") === "true";
+      setDarkMode(savedDarkMode);
+      if (savedDarkMode) {
+        document.documentElement.classList.add("dark");
+      }
+    }
+  }, []);
+
+  // Save dark mode preference
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (darkMode) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("darkMode", "true");
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("darkMode", "false");
+      }
+    }
+  }, [darkMode]);
 
   return (
-    <>
+    <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-100 dark:bg-gray-900`}>
       <Head>
         <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
-        <title>{seoTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <link rel="canonical" href={canonicalUrl} />
+        <title>Media Downloader - Search Movies and Music</title>
+        <meta name="description" content="Search, download, and explore movies and music with ease." />
+        <meta name="keywords" content="movies, music, downloader, search" />
+        <meta property="og:title" content="Media Downloader - Search Movies and Music" />
+        <meta property="og:description" content="Search, download, and explore movies and music with ease." />
+        <meta property="og:image" content="/images/thumbnail.jpg" />
+        <meta name="robots" content="index, follow" />
       </Head>
 
-      {/* Header */}
-      <header className="flex justify-between items-center p-4 border-b">
-        <h1 className="text-2xl font-bold">TUNEFLIX</h1>
+      <header className="flex justify-between items-center p-6 bg-white dark:bg-gray-800 shadow-md">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Media Downloader</h1>
+        <div
+          className={`relative w-14 h-8 flex items-center rounded-full px-1 cursor-pointer ${
+            darkMode ? "bg-gray-700" : "bg-yellow-400"
+          }`}
+          onClick={toggleDarkMode}
+          role="button"
+          aria-label="Toggle dark mode"
+        >
+          <div
+            className={`absolute left-1 w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-md transform transition-transform ${
+              darkMode ? "translate-x-0" : "translate-x-6"
+            }`}
+          >
+            {darkMode ? (
+              <svg className="w-4 h-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.636 6.636l-1.414-1.414m12.728 12.728l-1.414-1.414M6.636 17.364l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z" />
+              </svg>
+            )}
+          </div>
+        </div>
       </header>
 
-      {/* Movie Details */}
-      <div className="container mx-auto p-6">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <Image src={posterUrl} alt={movie?.title || 'Movie Poster'} width={300} height={450} className="rounded-lg" />
-          <div>
-            <h1 className="text-3xl font-bold">{movie?.title}</h1>
-            <p>{movie?.overview}</p>
-            <p><strong>Rating:</strong> {movie?.vote_average.toFixed(1)}</p>
-            <p><strong>Genres:</strong> {movie?.genres.map((g) => g.name).join(', ')}</p>
-            <p><strong>Runtime:</strong> {movie?.runtime} mins</p>
-            <p><strong>Release Date:</strong> {movie?.release_date}</p>
+      <main className="p-6">
+        <div className="max-w-2xl mx-auto">
+          <input
+            type="text"
+            placeholder="Search for movies, music, or media..."
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          <button
+            onClick={handleSearchSubmit}
+            className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+            aria-label="Search"
+          >
+            Search
+          </button>
 
-            {/* Watchlist Button */}
-            <button onClick={handleWatchlist} className={`mt-3 px-4 py-2 rounded ${watchlist.includes(movie?.id || 0) ? 'bg-red-500' : 'bg-green-500'}`}>
-              {watchlist.includes(movie?.id || 0) ? 'Remove from Watchlist' : 'Add to Watchlist'}
-            </button>
-
-            {/* Download Options */}
-            <div className="mt-3">
-              <label className="mr-2">Download Quality:</label>
-              <select value={selectedQuality} onChange={(e) => setSelectedQuality(e.target.value)} className="bg-gray-200 p-2 rounded">
-                <option value="1080p">1080p</option>
-                <option value="720p">720p</option>
-                <option value="480p">480p</option>
-                <option value="360p">360p</option>
-              </select>
+          {suggestions.length > 0 && (
+            <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md max-h-60 overflow-y-scroll">
+              {suggestions.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setSearchQuery(item.title);
+                    handleSearchSubmit();
+                    setSuggestions([]);
+                  }}
+                  className="flex items-center gap-4 p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <Image
+                    src={item.image || "/placeholder.png"}
+                    alt={item.title}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-cover rounded-md"
+                  />
+                  <p className="text-gray-800 dark:text-gray-200">{item.title}</p>
+                </div>
+              ))}
             </div>
-
-            {/* Download Button */}
-            <a href={`/download/${movie?.id}?quality=${selectedQuality}`} className="mt-3 inline-block bg-blue-500 px-4 py-2 rounded text-white">
-              Download {selectedQuality}
-            </a>
-          </div>
+          )}
         </div>
 
-        {/* Related Movies */}
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold">Related Movies</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-            {relatedMovies.map((related) => (
-              <Link key={related.id} href={`/movie/${related.id}`} className="block">
-                <Image src={`https://image.tmdb.org/t/p/w200${related.poster_path}`} alt={related.title} width={200} height={300} className="rounded-lg" />
-                <p className="text-center mt-2">{related.title}</p>
-              </Link>
-            ))}
-          </div>
+        <div className="mt-8">
+          {isLoading && <p className="text-center">Loading...</p>}
+          {error && <p className="text-center text-red-500">{error}</p>}
+          {results.length > 0 ? (
+            <>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {results.map((item) => (
+                  <li key={item.id} className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                    <Image
+                      src={item.image || "/placeholder.png"}
+                      alt={item.title}
+                      width={400}
+                      height={300}
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4">
+                      {item.title || "No Title"}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      {item.description || "No Description"}
+                    </p>
+                    <Link href={`/movie/${item.id}`}>
+                      <button className="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">
+                        Download
+                      </button>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleLoadMore}
+                className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+              >
+                Load More
+              </button>
+            </>
+          ) : (
+            !isLoading && <p className="text-center text-gray-600 dark:text-gray-400">No results found.</p>
+          )}
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
-};
-
-export default MoviePage;
+}
