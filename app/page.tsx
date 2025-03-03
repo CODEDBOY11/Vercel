@@ -12,6 +12,35 @@ interface ResultItem {
   image?: string;
 }
 
+// Caching interface
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+}
+
+// Cache key generator (unique for each query/page)
+const generateCacheKey = (query: string, page: number) => `${query}-${page}`;
+
+// Save to cache
+const saveToCache = <T,>(key: string, data: T) => {
+  const cacheItem: CacheItem<T> = {
+    data,
+    timestamp: Date.now(),
+  };
+  localStorage.setItem(key, JSON.stringify(cacheItem));
+};
+
+// Retrieve from cache (with 2-day TTL)
+const getFromCache = <T,>(key: string, ttl: number = 172800000): T | null => {
+  const cachedData = localStorage.getItem(key);
+  if (!cachedData) return null;
+
+  const parsedCache: CacheItem<T> = JSON.parse(cachedData);
+  const isStale = Date.now() - parsedCache.timestamp > ttl;
+
+  return isStale ? null : parsedCache.data;
+};
+
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -24,7 +53,7 @@ export default function HomePage() {
   // Debounce function to limit API calls
   const debounce = useCallback(
     <T extends (...args: unknown[]) => void>(func: T, delay: number) => {
-      let timeoutId: NodeJS.Timeout;
+      let timeoutId: ReturnType<typeof setTimeout>;
       return (...args: Parameters<T>) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => func(...args), delay);
@@ -46,15 +75,35 @@ export default function HomePage() {
   const fetchResults = async (page = 1) => {
     setIsLoading(true);
     setError(null);
+
+    // Generate cache key
+    const cacheKey = generateCacheKey(searchQuery, page);
+
+    // Check cache first
+    const cachedResults = getFromCache<ResultItem[]>(cacheKey);
+    if (cachedResults) {
+      setResults((prev) =>
+        page === 1 ? cachedResults : [...prev, ...cachedResults]
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    // If no cache, fetch from API
     try {
       const response = await fetch(
         `https://media-downloader-backend-sqrr.vercel.app/api/search?q=${searchQuery}&page=${page}`
       );
       if (!response.ok) throw new Error("Failed to fetch results");
       const data = await response.json();
+
+      // Update state
       setResults((prev) =>
         page === 1 ? data.results || [] : [...prev, ...(data.results || [])]
       );
+
+      // Save to cache (2-day TTL)
+      saveToCache(cacheKey, data.results || []);
     } catch (error) {
       handleError(error);
     } finally {
@@ -66,13 +115,24 @@ export default function HomePage() {
   const fetchSuggestions = useCallback(
     debounce(async () => {
       if (searchQuery.length > 2) {
+        // Check cache first
+        const cacheKey = `suggestions-${searchQuery}`;
+        const cachedSuggestions = getFromCache<ResultItem[]>(cacheKey);
+        if (cachedSuggestions) {
+          setSuggestions(cachedSuggestions);
+          return;
+        }
+
         try {
           const response = await fetch(
             `https://media-downloader-backend-sqrr.vercel.app/api/search?q=${searchQuery}`
           );
           if (!response.ok) throw new Error("Failed to fetch suggestions");
           const data = await response.json();
-          setSuggestions(data.results.slice(0, 3)); // Limit to 3 suggestions
+          const sliced = data.results.slice(0, 3);
+
+          setSuggestions(sliced);
+          saveToCache(cacheKey, sliced); // Cache for 2 days
         } catch (error) {
           handleError(error);
           setSuggestions([]);
@@ -81,7 +141,7 @@ export default function HomePage() {
         setSuggestions([]);
       }
     }, 300),
-    [searchQuery] // Explicitly declare dependencies
+    [searchQuery]
   );
 
   // Handle search input change
@@ -136,7 +196,6 @@ export default function HomePage() {
   return (
     <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-100 dark:bg-gray-900`}>
       <Head>
-        <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
         <title>Media Downloader - Search Movies and Music</title>
         <meta name="description" content="Search, download, and explore movies and music with ease." />
         <meta name="keywords" content="movies, music, downloader, search" />
@@ -144,6 +203,8 @@ export default function HomePage() {
         <meta property="og:description" content="Search, download, and explore movies and music with ease." />
         <meta property="og:image" content="/images/thumbnail.jpg" />
         <meta name="robots" content="index, follow" />
+        {/* Google Verification Tag */}
+        <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
       </Head>
 
       <header className="flex justify-between items-center p-6 bg-white dark:bg-gray-800 shadow-md">
