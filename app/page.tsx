@@ -195,18 +195,22 @@ export default function HomePage() {
 
   return (
     <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-100 dark:bg-gray-900`}>
-      <Head>
-        <title>Media Downloader - Search Movies and Music</title>
-        <meta name="description" content="Search, download, and explore movies and music with ease." />
-        <meta name="keywords" content="movies, music, downloader, search" />
-        <meta property="og:title" content="Media Downloader - Search Movies and Music" />
-        <meta property="og:description" content="Search, download, and explore movies and music with ease." />
-        <meta property="og:image" content="/images/thumbnail.jpg" />
-        <meta name="robots" content="index, follow" />
-        {/* Google Verification Tag */}
-        <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
-      </Head>
-
+        <Head>
+  <title>Media Downloader - Search Movies and Music</title>
+  <meta name="description" content="Search, download, and explore movies and music with ease." />
+  <meta name="keywords" content="movies, music, downloader, search" />
+  
+  {/* Open Graph Meta Tags */}
+  <meta property="og:title" content="Media Downloader - Search Movies and Music" />
+  <meta property="og:description" content="Search, download, and explore movies and music with ease." />
+  <meta property="og:image" content="https://vercel-sooty-alpha.vercel.app/images/thumbnail.jpg" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://vercel-sooty-alpha.vercel.app/" />
+  <meta name="robots" content="index, follow" />
+  
+  {/* Google Verification Tag */}
+  <meta name="google-site-verification" content="lGr0bhykDR3bl6ItjwSwOGLARIIIMfgl0R6ZWpAB2yM" />
+</Head>
       <header className="flex justify-between items-center p-6 bg-white dark:bg-gray-800 shadow-md">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Media Downloader</h1>
         <div
