@@ -203,7 +203,7 @@ export default function HomePage() {
   {/* Open Graph Meta Tags */}
   <meta property="og:title" content="Media Downloader - Search Movies and Music" />
   <meta property="og:description" content="Search, download, and explore movies and music with ease." />
-  <meta property="og:image" content="https://vercel-sooty-alpha.vercel.app/images/thumbnail.jpg" />
+  <meta property="og:image" content="https://vercel-sooty-alpha.vercel.app/thumbnail.jpg" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://vercel-sooty-alpha.vercel.app/" />
   <meta name="robots" content="index, follow" />
