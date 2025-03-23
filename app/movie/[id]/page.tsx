@@ -6,6 +6,7 @@ import { faFacebook, faTwitter, faWhatsapp } from '@fortawesome/free-brands-svg-
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import Head from 'next/head'; // Import Head for SEO
 
 // Define the Movie type based on TMDb API response
 interface Movie {
@@ -138,6 +139,39 @@ export default function MovieDetails() {
 
   return (
     <>
+      {/* SEO Meta Tags */}
+      <Head>
+        <title>{`${movie.title} - TUNEFLIX`}</title>
+        <meta
+          name="description"
+          content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview}`}
+        />
+        <meta
+          name="keywords"
+          content={`${movie.title}, ${movie.genres.map((genre) => genre.name).join(', ')}, download ${movie.title}, watch ${movie.title}`}
+        />
+        <meta property="og:title" content={`${movie.title} - TUNEFLIX`} />
+        <meta
+          property="og:description"
+          content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview}`}
+        />
+        <meta property="og:image" content={`https://image.tmdb.org/t/p/w1280${movie.poster_path}`} />
+        <meta property="og:url" content={`https://yourwebsite.com/movie/${id}`} />
+        <meta property="og:type" content="website" />
+        {/* Structured Data (Schema.org) */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Movie",
+            name: movie.title,
+            image: `https://image.tmdb.org/t/p/w1280${movie.poster_path}`,
+            description: movie.overview,
+            genre: movie.genres.map((genre) => genre.name).join(', '),
+            url: `https://yourwebsite.com/movie/${id}`,
+          })}
+        </script>
+      </Head>
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -217,7 +251,7 @@ export default function MovieDetails() {
       {/* Main Content */}
       <main className="pt-40 container mx-auto px-4"> {/* Added space between header and movie name */}
         {/* Movie Name */}
-        <h2 className="text-4xl font-bold text-center mb-6">{movie.title}</h2>
+        <h1 className="text-4xl font-bold text-center mb-6">{movie.title}</h1>
 
         {/* Movie Poster */}
         <img
@@ -262,11 +296,11 @@ export default function MovieDetails() {
         </div>
 
         {/* Explore Other Genres (Updated with Popular Movies) */}
-        <h3 className="text-2xl font-bold text-center mb-6">Explore Other Genres</h3>
+        <h2 className="text-2xl font-bold text-center mb-6">Explore Other Genres</h2>
         <div className="space-y-8">
           {Object.entries(popularMovies).map(([genre, movies]) => (
             <div key={genre}>
-              <h4 className="text-xl font-bold mb-4">{genre}</h4>
+              <h3 className="text-xl font-bold mb-4">{genre}</h3>
               <div className="overflow-x-auto whitespace-nowrap pb-4">
                 <div className="flex gap-4">
                   {movies.map((movie) => (

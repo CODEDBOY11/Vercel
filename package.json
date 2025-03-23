@@ -5,19 +5,21 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@fortawesome/free-brands-svg-icons": "^6.5.1",
+    "@fortawesome/free-solid-svg-icons": "^6.5.1",
+    "@fortawesome/react-fontawesome": "^0.2.0",
     "autoprefixer": "^10.4.20",
     "next": "^15.1.6",
+    "next-sitemap": "^4.2.3",
     "node-fetch": "^3.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-youtube": "^10.1.0",
-    "@fortawesome/react-fontawesome": "^0.2.0",
-    "@fortawesome/free-solid-svg-icons": "^6.5.1",
-    "@fortawesome/free-brands-svg-icons": "^6.5.1"
+    "react-youtube": "^10.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
