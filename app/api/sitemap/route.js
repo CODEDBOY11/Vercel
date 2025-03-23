@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const apiKey = '04553a35f2a43bffba8c0dedd36ac92b'; // Hardcoded TMDb API key
+    const apiKey = '04553a35f2a43bffba8c0dedd36ac92b'; // TMDb API key
 
     const res = await fetch(
       `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=en-US&page=1`
