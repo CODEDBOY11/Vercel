@@ -3,5 +3,5 @@ User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://vercel-sooty-alpha.vercel.app/sitemap.xml
+Sitemap: https://vercel-sooty-alpha.vercel.app/sitemap
 
