@@ -2,7 +2,7 @@
 module.exports = {
   siteUrl: 'https://vercel-sooty-alpha.vercel.app', // Replace with your Vercel URL
   generateRobotsTxt: true, // Generate robots.txt file
-  exclude: ['/api/sitemap'], // Exclude the custom API route
+  exclude: [], // Exclude the custom API route
   robotsTxtOptions: {
     policies: [
       {
