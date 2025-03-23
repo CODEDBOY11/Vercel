@@ -1,7 +1,3 @@
-# *
 User-agent: *
 Allow: /
-
-# Sitemaps
-Sitemap: https://vercel-sooty-alpha.vercel.app/sitemap
-
+Sitemap: https://vercel-sooty-alpha.vercel.app/sitemap.xml
