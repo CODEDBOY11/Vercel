@@ -196,6 +196,7 @@ export default function HomePage() {
   return (
     <div className={`min-h-screen ${darkMode ? "dark" : ""} bg-gray-100 dark:bg-gray-900`}>
       <Head>
+        <link rel="sitemap" href="https://vercel-sooty-alpha.vercel.app/api/sitemap" /> 
         <title>Media Downloader - Search Movies and Music</title>
         <meta name="description" content="Search, download, and explore movies and music with ease." />
         <meta name="keywords" content="movies, music, downloader, search" />
