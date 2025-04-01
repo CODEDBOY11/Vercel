@@ -1,10 +1,17 @@
 {
-  "headers": [
-    {
-      "source": "/sitemap.xml",
-      "headers": [
-        { "key": "X-Robots-Tag", "value": "all" }
-      ]
-    }
-  ]
-}
+     "routes": [
+       {
+         "src": "/sitemap.xml",
+         "headers": {
+           "Content-Type": "text/xml",
+           "Cache-Control": "public, max-age=3600"
+         },
+         "middleware": {
+           "bypass": true
+         }
+       }
+     ],
+     "security": {
+       "googleBotBypass": true
+     }
+   }
