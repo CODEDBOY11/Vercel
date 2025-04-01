@@ -1,3 +1,9 @@
+# *
 User-agent: *
 Allow: /
+
+# Host
+Host: https://vercel-sooty-alpha.vercel.app
+
+# Sitemaps
 Sitemap: https://vercel-sooty-alpha.vercel.app/sitemap.xml

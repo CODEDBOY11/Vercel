@@ -1,8 +1,3 @@
-// Remove these lines (they can't be mixed with regular exports):
-// export const dynamic = 'force-dynamic';
-// export const revalidate = 0;
-
-// Use this structure instead:
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -23,7 +18,7 @@ export default async function sitemap() {
     },
   ];
 
-  // Dynamic pages (e.g., movies)
+  // Dynamic pages
   try {
     const response = await fetch(
       'https://api.themoviedb.org/3/movie/popular?api_key=04553a35f2a43bffba8c0dedd36ac92b'
