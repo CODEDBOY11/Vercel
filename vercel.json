@@ -1,17 +1,20 @@
 {
-     "routes": [
-       {
-         "src": "/sitemap.xml",
-         "headers": {
-           "Content-Type": "text/xml",
-           "Cache-Control": "public, max-age=3600"
-         },
-         "middleware": {
-           "bypass": true
-         }
-       }
-     ],
-     "security": {
-       "googleBotBypass": true
-     }
-   }
+  "routes": [
+    {
+      "src": "/sitemap.xml",
+      "headers": {
+        "Content-Type": "text/xml",
+        "Cache-Control": "public, max-age=3600"
+      },
+      "middleware": 0
+    },
+    {
+      "src": "/sitemap-([0-9]*).xml",
+      "headers": {
+        "Content-Type": "text/xml",
+        "Cache-Control": "public, max-age=3600"
+      },
+      "middleware": 0
+    }
+  ]
+}

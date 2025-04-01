@@ -1,6 +1,11 @@
-export async function generateSitemap() {
-   export const dynamic = 'force-dynamic'; // Bypass Vercel cache
-   export const revalidate = 0; // Disable ISR
+// Remove these lines (they can't be mixed with regular exports):
+// export const dynamic = 'force-dynamic';
+// export const revalidate = 0;
+
+// Use this structure instead:
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function sitemap() {
   // Static pages
   const staticPages = [
@@ -31,20 +36,9 @@ export default async function sitemap() {
       lastModified: new Date().toISOString(),
     }));
 
-    // Combine static and dynamic entries
     return [...staticPages, ...movieEntries];
   } catch (error) {
     console.error('Error generating sitemap:', error);
-    return staticPages; // Fallback to static pages if dynamic data fails
+    return staticPages;
   }
 }
-return `<?xml version="1.0" encoding="UTF-8"?>
-     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-       ${entries.map(entry => `
-       <url>
-         <loc>${entry.url}</loc>
-         <lastmod>${entry.lastModified}</lastmod>
-       </url>
-       `).join('')}
-     </urlset>`
-   } 
