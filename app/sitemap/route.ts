@@ -6,13 +6,13 @@ export async function GET() {
   const baseUrl = 'https://vercel-sooty-alpha.vercel.app';
   
   try {
-    // 1. Static URLs
+    // Static URLs
     const staticUrls = [
       { url: baseUrl, lastModified: new Date().toISOString() },
       { url: `${baseUrl}/about`, lastModified: new Date().toISOString() }
     ];
 
-    // 2. Dynamic URLs
+    // Dynamic URLs
     let dynamicUrls = [];
     try {
       const apiRes = await fetch(
@@ -22,6 +22,7 @@ export async function GET() {
       
       if (apiRes.ok) {
         const data = await apiRes.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         dynamicUrls = (data.results || []).map((movie: any) => ({
           url: `${baseUrl}/movie/${movie.id}`,
           lastModified: new Date(movie.release_date || Date.now()).toISOString()
@@ -31,7 +32,7 @@ export async function GET() {
       console.error('API fetch failed:', apiError);
     }
 
-    // 3. Generate XML
+    // XML generation
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
       <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         ${[...staticUrls, ...dynamicUrls].map(entry => `
