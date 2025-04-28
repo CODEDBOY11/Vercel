@@ -6,18 +6,18 @@ export async function GET() {
   const baseUrl = 'https://vercel-sooty-alpha.vercel.app';
   
   try {
-    // 1. Static URLs (always work)
+    // 1. Static URLs
     const staticUrls = [
       { url: baseUrl, lastModified: new Date().toISOString() },
       { url: `${baseUrl}/about`, lastModified: new Date().toISOString() }
     ];
 
-    // 2. Dynamic URLs (fail gracefully)
+    // 2. Dynamic URLs
     let dynamicUrls = [];
     try {
       const apiRes = await fetch(
         'https://api.themoviedb.org/3/movie/popular?api_key=04553a35f2a43bffba8c0dedd36ac92b',
-        { next: { revalidate: 3600 } } // Cache API for 1 hour
+        { next: { revalidate: 3600 } }
       );
       
       if (apiRes.ok) {
@@ -28,7 +28,7 @@ export async function GET() {
         }));
       }
     } catch (apiError) {
-      console.error('API fetch failed - using static URLs only:', apiError);
+      console.error('API fetch failed:', apiError);
     }
 
     // 3. Generate XML
@@ -50,8 +50,8 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Sitemap generation crashed:', error);
-    return new NextResponse('Sitemap unavailable', { 
+    console.error('Sitemap generation failed:', error);
+    return new NextResponse('Sitemap unavailable', {
       status: 500,
       headers: { 'Content-Type': 'text/plain' }
     });
