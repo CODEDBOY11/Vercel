@@ -139,39 +139,36 @@ export default function MovieDetails() {
 
   return (
     <>
-      {/* SEO Meta Tags */}
-      <Head>
-        <title>{`${movie.title} - TUNEFLIX`}</title>
-        <meta
-          name="description"
-          content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview}`}
-        />
-        <meta
-          name="keywords"
-          content={`${movie.title}, ${movie.genres.map((genre) => genre.name).join(', ')}, download ${movie.title}, watch ${movie.title}`}
-        />
-        <meta property="og:title" content={`${movie.title} - TUNEFLIX`} />
-        <meta
-          property="og:description"
-          content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview}`}
-        />
-        <meta property="og:image" content={`https://image.tmdb.org/t/p/w1280${movie.poster_path}`} />
-        <meta property="og:url" content={`https://yourwebsite.com/movie/${id}`} />
-        <meta property="og:type" content="website" />
-        {/* Structured Data (Schema.org) */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Movie",
-            name: movie.title,
-            image: `https://image.tmdb.org/t/p/w1280${movie.poster_path}`,
-            description: movie.overview,
-            genre: movie.genres.map((genre) => genre.name).join(', '),
-            url: `https://yourwebsite.com/movie/${id}`,
-          })}
-        </script>
-      </Head>
-
+     <Head>
+  <title>{`${movie.title} - TUNEFLIX`}</title>
+  <meta
+    name="description"
+    content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview.slice(0, 160)}`}
+  />
+  <meta
+    name="keywords"
+    content={`${movie.title}, ${movie.genres.map((genre) => genre.name).join(', ')}, download ${movie.title}, watch ${movie.title}`}
+  />
+  <meta property="og:title" content={`${movie.title} - TUNEFLIX`} />
+  <meta
+    property="og:description"
+    content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview.slice(0, 160)}`}
+  />
+  <meta property="og:image" content={`https://image.tmdb.org/t/p/w1280${movie.poster_path}`} />
+  <meta property="og:url" content={`https://vercel-sooty-alpha.vercel.app/movie/${id}`} />
+  <meta property="og:type" content="website" />
+  <script type="application/ld+json">
+    {JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Movie",
+      name: movie.title,
+      image: `https://image.tmdb.org/t/p/w1280${movie.poster_path}`,
+      description: movie.overview,
+      genre: movie.genres.map((genre) => genre.name),
+      url: `https://vercel-sooty-alpha.vercel.app/movie/${id}`,
+    })}
+  </script>
+</Head>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -187,7 +184,7 @@ export default function MovieDetails() {
           <h1 className="text-2xl font-bold text-cyan-400">TUNEFLIX</h1>
 
           {/* Search Icon */}
-          <Link href="/search" legacyBehavior>
+          <Link href="https://vercel-sooty-alpha.vercel.app/" legacyBehavior>
             <a className="text-xl text-white hover:text-cyan-400 transition-colors">
               <FontAwesomeIcon icon={faSearch} className="w-5 h-5" />
             </a>
