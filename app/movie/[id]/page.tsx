@@ -137,38 +137,69 @@ export default function MovieDetails() {
     (video) => video.site === 'YouTube' && video.type === 'Trailer'
   );
 
-  return (
-    <>
-     <Head>
-  <title>{`${movie.title} - TUNEFLIX`}</title>
-  <meta
-    name="description"
-    content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview.slice(0, 160)}`}
-  />
-  <meta
-    name="keywords"
-    content={`${movie.title}, ${movie.genres.map((genre) => genre.name).join(', ')}, download ${movie.title}, watch ${movie.title}`}
-  />
-  <meta property="og:title" content={`${movie.title} - TUNEFLIX`} />
-  <meta
-    property="og:description"
-    content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview.slice(0, 160)}`}
-  />
-  <meta property="og:image" content={`https://image.tmdb.org/t/p/w1280${movie.poster_path}`} />
-  <meta property="og:url" content={`https://vercel-sooty-alpha.vercel.app/movie/${id}`} />
-  <meta property="og:type" content="website" />
-  <script type="application/ld+json">
-    {JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "Movie",
-      name: movie.title,
-      image: `https://image.tmdb.org/t/p/w1280${movie.poster_path}`,
-      description: movie.overview,
-      genre: movie.genres.map((genre) => genre.name),
-      url: `https://vercel-sooty-alpha.vercel.app/movie/${id}`,
-    })}
-  </script>
-</Head>
+
+return (
+  <>
+    <Head>
+      <title>{`${movie.title} - TUNEFLIX`}</title>
+      <meta
+        name="description"
+        content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview.slice(0, 160)}`}
+      />
+      <meta
+        name="keywords"
+        content={`${movie.title}, ${movie.genres?.map((genre) => genre.name).join(', ') || ''}, download ${movie.title}, watch ${movie.title}`}
+      />
+      
+      {/* Open Graph Tags */}
+      <meta property="og:title" content={`${movie.title} - TUNEFLIX`} />
+      <meta
+        property="og:description"
+        content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview?.slice(0, 160) || ''}`}
+      />
+      <meta 
+        property="og:image" 
+        content={movie.poster_path 
+          ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}`
+          : 'https://vercel-sooty-alpha.vercel.app/default-og-image.jpg'
+        } 
+      />
+      <meta property="og:url" content={`https://vercel-sooty-alpha.vercel.app/movie/${id}`} />
+      <meta property="og:type" content="website" />
+      
+      {/* Twitter Card Tags */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={`${movie.title} - TUNEFLIX`} />
+      <meta
+        name="twitter:description"
+        content={`Watch ${movie.title} on TUNEFLIX. ${movie.overview?.slice(0, 160) || ''}`}
+      />
+      <meta 
+        name="twitter:image" 
+        content={movie.poster_path 
+          ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}`
+          : 'https://vercel-sooty-alpha.vercel.app/default-og-image.jpg'
+        } 
+      />
+
+      {/* JSON-LD Schema */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Movie",
+          name: movie.title,
+          image: movie.poster_path 
+            ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}`
+            : 'https://vercel-sooty-alpha.vercel.app/default-og-image.jpg',
+          description: movie.overview || '',
+          genre: movie.genres?.map((genre) => genre.name) || [],
+          url: `https://vercel-sooty-alpha.vercel.app/movie/${id}`,
+        })}
+      </script>
+    </Head>
+
+    
+ 
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
