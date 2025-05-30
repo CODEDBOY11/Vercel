@@ -1,32 +1,29 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
-// 1. Movie fetch function with proper typing
-async function fetchMovie(id: string): Promise<{
-  title: string;
-  poster_path: string | null;
-  overview?: string;
-  genres?: Array<{ name: string }>;
-}> {
+// Movie fetch function
+async function fetchMovie(id: string) {
   const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${id}?api_key=04553a35f2a43bffba8c0dedd36ac92b`,
-    { next: { revalidate: 86400 } } // Cache for 24h
+    `https://api.themoviedb.org/3/movie/${id}?api_key=YOUR_API_KEY`,
+    { next: { revalidate: 86400 } }
   );
   if (!res.ok) throw new Error(`Failed to fetch movie ${id}`);
   return res.json();
 }
 
-// 2. Enhanced metadata generator
+// Metadata generator
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  const { id } = await params;
   try {
-    const movie = await fetchMovie(params.id);
-    
-    const ogImage = movie.poster_path 
+    const movie = await fetchMovie(id);
+
+    const ogImage = movie.poster_path
       ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}`
-      : 'https://vercel-sooty-alpha.vercel.app/default-og.jpg';
+      : "https://your-default-image-url.com/default-og.jpg";
 
     return {
       title: `${movie.title} - TUNEFLIX`,
@@ -34,8 +31,8 @@ export async function generateMetadata({
       openGraph: {
         title: `${movie.title} - TUNEFLIX`,
         description: movie.overview?.slice(0, 160) || "Watch on TUNEFLIX",
-        url: `https://vercel-sooty-alpha.vercel.app/movie/${params.id}`,
-        type: 'website',
+        url: `https://your-domain.com/movie/${id}`,
+        type: "website",
         images: [
           {
             url: ogImage,
@@ -44,31 +41,46 @@ export async function generateMetadata({
             alt: movie.title,
           },
         ],
-        siteName: 'TUNEFLIX',
+        siteName: "TUNEFLIX",
       },
       twitter: {
-        card: 'summary_large_image',
+        card: "summary_large_image",
         title: `${movie.title} - TUNEFLIX`,
         description: movie.overview?.slice(0, 160) || "Watch on TUNEFLIX",
         images: [{ url: ogImage }],
       },
     };
-  } catch (error) {
+  } catch {
     return {
-      title: 'Movie - TUNEFLIX',
-      description: 'Watch this movie on TUNEFLIX',
+      title: "Movie - TUNEFLIX",
+      description: "Watch this movie on TUNEFLIX",
       openGraph: {
-        images: [{ url: 'https://vercel-sooty-alpha.vercel.app/default-og.jpg' }],
+        images: [
+          {
+            url: "https://your-default-image-url.com/default-og.jpg",
+          },
+        ],
       },
       twitter: {
-        card: 'summary_large_image',
-        images: [{ url: 'https://vercel-sooty-alpha.vercel.app/default-og.jpg' }],
+        card: "summary_large_image",
+        images: [
+          {
+            url: "https://your-default-image-url.com/default-og.jpg",
+          },
+        ],
       },
     };
   }
 }
 
-// 3. Layout component
-export default function Layout({ children }: { children: React.ReactNode }) {
+// Layout component
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   return <div className="movie-layout">{children}</div>;
 }
