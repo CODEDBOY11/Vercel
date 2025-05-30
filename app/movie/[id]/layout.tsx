@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // Movie fetch function
 async function fetchMovie(id: string) {
   const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${id}?api_key=YOUR_API_KEY`,
+    `https://api.themoviedb.org/3/movie/${id}?api_key=04553a35f2a43bffba8c0dedd36ac92b`,
     { next: { revalidate: 86400 } }
   );
   if (!res.ok) throw new Error(`Failed to fetch movie ${id}`);
@@ -21,9 +21,10 @@ export async function generateMetadata({
   try {
     const movie = await fetchMovie(id);
 
-    const ogImage = movie.poster_path
+    // Always use the movie poster if available (high-quality)
+    const posterUrl = movie.poster_path
       ? `https://image.tmdb.org/t/p/w1280${movie.poster_path}`
-      : "https://your-default-image-url.com/default-og.jpg";
+      : "https://vercel-sooty-alpha.vercel.app/default-og.jpg"; // Fallback
 
     return {
       title: `${movie.title} - TUNEFLIX`,
@@ -31,11 +32,11 @@ export async function generateMetadata({
       openGraph: {
         title: `${movie.title} - TUNEFLIX`,
         description: movie.overview?.slice(0, 160) || "Watch on TUNEFLIX",
-        url: `https://your-domain.com/movie/${id}`,
+        url: `https://vercel-sooty-alpha.vercel.app/movie/${id}`,
         type: "website",
         images: [
           {
-            url: ogImage,
+            url: posterUrl,
             width: 1280,
             height: 720,
             alt: movie.title,
@@ -47,17 +48,18 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: `${movie.title} - TUNEFLIX`,
         description: movie.overview?.slice(0, 160) || "Watch on TUNEFLIX",
-        images: [{ url: ogImage }],
+        images: [{ url: posterUrl }],
       },
     };
   } catch {
+    // Fallback metadata if fetch fails
     return {
       title: "Movie - TUNEFLIX",
       description: "Watch this movie on TUNEFLIX",
       openGraph: {
         images: [
           {
-            url: "https://your-default-image-url.com/default-og.jpg",
+            url: "https://vercel-sooty-alpha.vercel.app/default-og.jpg",
           },
         ],
       },
@@ -65,7 +67,7 @@ export async function generateMetadata({
         card: "summary_large_image",
         images: [
           {
-            url: "https://your-default-image-url.com/default-og.jpg",
+            url: "https://vercel-sooty-alpha.vercel.app/default-og.jpg",
           },
         ],
       },
@@ -73,7 +75,7 @@ export async function generateMetadata({
   }
 }
 
-// Layout component
+// Layout component (unchanged)
 export default async function Layout({
   children,
   params,
